@@ -7,5 +7,4 @@ class SendService: IService {
     fun methods(): Collection<Method> {
         return Method.values().asList()
     }
-
 }
