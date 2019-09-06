@@ -2,13 +2,15 @@ package com.novardis.test.view
 
 import com.novardis.test.controller.MainController
 import com.novardis.test.model.Couple
+import com.novardis.test.styles.PostmanStyle
+import javafx.beans.binding.BooleanBinding
+import javafx.beans.property.SimpleBooleanProperty
 import javafx.scene.control.TabPane
 import javafx.scene.control.TextFormatter
 import tornadofx.*
 import javafx.beans.value.ObservableValue
 import javafx.stage.FileChooser
 import org.apache.logging.log4j.LogManager
-import java.util.*
 
 
 class MasterView: View() {
@@ -39,6 +41,8 @@ class TopView: View() {
     val controller: MainController by inject()
     var methodName = controller.currentMethod.methodProperty.objectBinding { it }
 
+    val urlDisabledProperty = SimpleBooleanProperty(true)
+
     override val root = vbox(10) {
         padding = insets(10)
 
@@ -51,25 +55,30 @@ class TopView: View() {
                         useMaxWidth = true
                         minWidth = 400.0
 
-/*
                         focusedProperty().addListener { observable: ObservableValue<out Boolean>, oldValue: Boolean, newValue: Boolean ->
                             if (!newValue) {
                                 if (controller.validateUrl(this.text)) {
                                     LOG.info("correct url stored from ${previousValue} to ${this.text}")
                                     previousValue = this.text
+                                    removeClass(PostmanStyle.errorClass)
+                                    urlDisabledProperty.value = false
                                 } else {
                                     LOG.info("incorrect url resolved ${this.text}, previous $previousValue restored")
-                                    this.text = previousValue
+//                                    this.text = previousValue
+                                    addClass(PostmanStyle.errorClass)
+                                    urlDisabledProperty.value = true
                                 }
                             }
                         }
-*/
                         textFormatter = TextFormatter<TextFormatter.Change>(controller.httpValidator)
 
                     }
                     button() {
+                        disableProperty().bind(urlDisabledProperty)
                         textProperty().bind(methodName)
-                        action { controller.send() }
+                        action {
+                            controller.send()
+                        }
                     }
                     useMaxWidth = true
                 }

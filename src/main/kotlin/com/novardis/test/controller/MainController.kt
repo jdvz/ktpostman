@@ -6,6 +6,7 @@ import com.novardis.test.service.SendService
 import com.novardis.test.utils.JsonMapResponseTransformer
 import com.novardis.test.model.Couple
 import com.novardis.test.utils.StringResponseTransformer
+import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleStringProperty
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
