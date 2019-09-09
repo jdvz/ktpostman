@@ -135,7 +135,6 @@ class TopView: View() {
                 }
             }
             bottom {
-                maxHeight = 400.0
                 tabpane {
                     tabClosingPolicy = TabPane.TabClosingPolicy.UNAVAILABLE
 
@@ -147,9 +146,6 @@ class TopView: View() {
                     responsePane = tab("response body") {
                         addClass("markerClass")
                         scrollPane = scrollpane {
-                            vbarPolicy = ScrollPane.ScrollBarPolicy.AS_NEEDED
-                            hbarPolicy = ScrollPane.ScrollBarPolicy.AS_NEEDED
-
                             label(controller.responseBodyProperty) {
                                 heightProperty().addListener {observable: ObservableValue<out Number>, oldValue: Number, newValue: Number ->
                                     scrollPane.vvalue = newValue.toDouble()

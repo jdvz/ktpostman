@@ -5,6 +5,7 @@ import com.novardis.test.inject.Injector
 import com.novardis.test.service.SendService
 import com.novardis.test.utils.JsonMapResponseTransformer
 import com.novardis.test.model.Couple
+import com.novardis.test.utils.Converter
 import com.novardis.test.utils.StringResponseTransformer
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleStringProperty
@@ -26,6 +27,7 @@ class MainController: Controller() {
         val URL_SYMBOLS_REGEX = Regex("[-a-zA-Z0-9+&@#/%?:.=~_|!,;]*")
 
         val URL_INITIAL_VALUE = "http://"
+        val SET_COOKIE_HEADER = "set-cookie"
     }
 
     val configuration : ConfigurationController by inject()
@@ -67,14 +69,22 @@ class MainController: Controller() {
             parameters.removeAll(Couple::isEmpty)
             headers.removeAll(Couple::isEmpty)
             cookies.removeAll(Couple::isEmpty)
-            responseBody = currentMethod.getMethod().send(
+
+
+            val response = currentMethod.getMethod().send(
                 url!!,
-                Injector.inject(StringResponseTransformer::class.java),
                 body,
                 parameters,
                 headers,
                 cookies
             )
+
+            if (response != null) {
+                cookies.addAll(response.allHeaders.filter { it.name.equals(SET_COOKIE_HEADER, true) }
+                    .map { Couple.fromArray(it.value.split("=")) })
+                headers.addAll(response.allHeaders.filter { !it.name.equals(SET_COOKIE_HEADER, true) }.map { Couple(it.name, it.value) })
+                responseBody = Converter.transformResponse(Injector.inject(StringResponseTransformer::class.java), response)
+            }
         }
     }
 

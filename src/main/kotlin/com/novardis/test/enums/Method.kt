@@ -5,6 +5,7 @@ import com.novardis.test.inject.Injector
 import com.novardis.test.model.Couple
 import com.novardis.test.utils.Converter
 import com.novardis.test.utils.ResponseTransformer
+import org.apache.http.HttpResponse
 import org.apache.http.client.entity.UrlEncodedFormEntity
 import org.apache.http.client.methods.*
 import org.apache.http.client.utils.URIBuilder
@@ -15,15 +16,14 @@ import java.io.Serializable
 
 enum class Method: IMethod {
     GET {
-        override fun <T : Serializable> send(
+        override fun send(
             url: String,
-            transformer: ResponseTransformer<T>,
             body: String?,
             parameters: List<Couple>,
             headers: List<Couple>?,
             cookies: List<Couple>?
-        ): T? {
-            return createRequest(transformer, headers, cookies) {
+        ): CloseableHttpResponse? {
+            return createRequest(headers, cookies) {
                 val urlBuilder = URIBuilder(url)
                 parameters.forEach { couple -> urlBuilder.addParameter(couple.name, couple.value) }
                 HttpGet(urlBuilder.build())
@@ -31,15 +31,14 @@ enum class Method: IMethod {
         }
     },
     POST {
-        override fun <T : Serializable> send(
+        override fun send(
             url: String,
-            transformer: ResponseTransformer<T>,
             body: String?,
             parameters: List<Couple>,
             headers: List<Couple>?,
             cookies: List<Couple>?
-        ): T? {
-            return createRequest(transformer, headers, cookies) {
+        ): CloseableHttpResponse? {
+            return createRequest(headers, cookies) {
                 val urlBuilder = URIBuilder(url)
                 val post = HttpPost(urlBuilder.build())
                 if (!body.isNullOrBlank()) {
@@ -52,15 +51,14 @@ enum class Method: IMethod {
         }
     },
     PUT {
-        override fun <T : Serializable> send(
+        override fun send(
             url: String,
-            transformer: ResponseTransformer<T>,
             body: String?,
             parameters: List<Couple>,
             headers: List<Couple>?,
             cookies: List<Couple>?
-        ): T? {
-            return createRequest(transformer, headers, cookies) {
+        ): CloseableHttpResponse? {
+            return createRequest(headers, cookies) {
                 val urlBuilder = URIBuilder(url)
                 val post = HttpPut(urlBuilder.build())
                 post.entity = UrlEncodedFormEntity(parameters.filter { couple -> !couple.isEmpty() }
@@ -70,15 +68,14 @@ enum class Method: IMethod {
         }
     },
     DELETE {
-        override fun <T : Serializable> send(
+        override fun send(
             url: String,
-            transformer: ResponseTransformer<T>,
             body: String?,
             parameters: List<Couple>,
             headers: List<Couple>?,
             cookies: List<Couple>?
-        ): T? {
-            return createRequest(transformer, headers, cookies) {
+        ): CloseableHttpResponse? {
+            return createRequest(headers, cookies) {
                 val urlBuilder = URIBuilder(url)
                 parameters.forEach { couple -> if (!couple.isEmpty()) { urlBuilder.addParameter(couple.name, couple.value) } }
                 HttpDelete(urlBuilder.build())
@@ -86,15 +83,14 @@ enum class Method: IMethod {
         }
     },
     HEAD {
-        override fun <T : Serializable> send(
+        override fun send(
             url: String,
-            transformer: ResponseTransformer<T>,
             body: String?,
             parameters: List<Couple>,
             headers: List<Couple>?,
             cookies: List<Couple>?
-        ): T? {
-            return createRequest(transformer, headers, cookies) {
+        ): CloseableHttpResponse? {
+            return createRequest(headers, cookies) {
                 val urlBuilder = URIBuilder(url)
                 parameters.forEach { couple -> if (!couple.isEmpty()) { urlBuilder.addParameter(couple.name, couple.value) } }
                 HttpHead(urlBuilder.build())
@@ -102,9 +98,9 @@ enum class Method: IMethod {
         }
     };
 
-    protected fun<T : Serializable, F : HttpRequestBase> createRequest(transformer: ResponseTransformer<T>,
-                                                                       headers: List<Couple>?,
-                                                                       cookies: List<Couple>?, function: () -> F) : T? {
+    protected fun <F : HttpRequestBase> createRequest(headers: List<Couple>?,
+                                                      cookies: List<Couple>?,
+                                                      function: () -> F) : CloseableHttpResponse? {
         val client = HttpClientBuilder.create().build()
         val request = function()
         val store = Injector.inject(CookieWrapper::class.java)
@@ -122,9 +118,6 @@ enum class Method: IMethod {
             }
         }
 
-        val response = client.execute(request)
-//        headers += response.allHeaders.map { it -> Couple(it.name, it.value) }
-//        headers.add()
-        return Converter.transformResponse(transformer, response)
+        return client.execute(request)
     }
 }
