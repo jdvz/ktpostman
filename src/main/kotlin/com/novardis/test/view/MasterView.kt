@@ -9,6 +9,7 @@ import javafx.scene.control.TabPane
 import javafx.scene.control.TextFormatter
 import tornadofx.*
 import javafx.beans.value.ObservableValue
+import javafx.scene.control.Tab
 import javafx.stage.FileChooser
 import org.apache.logging.log4j.LogManager
 
@@ -42,12 +43,18 @@ class TopView: View() {
     var methodName = controller.currentMethod.methodProperty.objectBinding { it }
 
     val urlDisabledProperty = SimpleBooleanProperty(true)
+    var responsePane: Tab by singleAssign<Tab>()
+
+    init {
+        controller.responseBodyProperty.onChange { responsePane.select() }
+    }
 
     override val root = vbox(10) {
         padding = insets(10)
 
         borderpane {
             top {
+
                 hbox {
                     label("Url: ")
                     textfield(controller.urlProperty) {
@@ -67,6 +74,7 @@ class TopView: View() {
 //                                    this.text = previousValue
                                     addClass(PostmanStyle.errorClass)
                                     urlDisabledProperty.value = true
+
                                 }
                             }
                         }
@@ -101,10 +109,15 @@ class TopView: View() {
 
                         }
                     }
-                    tab("response body") {
-                        scrollpane {
-                            label(controller.responseBodyProperty) {
-                                isWrapText = true
+                    responsePane = tab("response body") {
+                        anchorpane() {
+                            addClass("markerClass")
+                            scrollpane {
+                                label(controller.responseBodyProperty) {
+                                    isWrapText = true
+                                }
+
+                                isFitToWidth = true
                             }
                         }
                     }
