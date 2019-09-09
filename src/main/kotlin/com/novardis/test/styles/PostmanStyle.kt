@@ -23,7 +23,7 @@ class PostmanStyle : Stylesheet() {
         }
 
         markerClass {
-            backgroundColor += Color.GRAY
+            backgroundColor += Color.LIGHTCYAN
         }
     }
 }

@@ -123,6 +123,8 @@ enum class Method: IMethod {
         }
 
         val response = client.execute(request)
+//        headers += response.allHeaders.map { it -> Couple(it.name, it.value) }
+//        headers.add()
         return Converter.transformResponse(transformer, response)
     }
 }

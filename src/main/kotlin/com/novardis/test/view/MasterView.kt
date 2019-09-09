@@ -1,36 +1,64 @@
 package com.novardis.test.view
 
+import com.novardis.test.controller.ConfigurationController
 import com.novardis.test.controller.MainController
 import com.novardis.test.model.Couple
 import com.novardis.test.styles.PostmanStyle
-import javafx.beans.binding.BooleanBinding
+import javafx.application.Platform
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.scene.control.TabPane
 import javafx.scene.control.TextFormatter
 import tornadofx.*
 import javafx.beans.value.ObservableValue
+import javafx.scene.control.ScrollPane
 import javafx.scene.control.Tab
 import javafx.stage.FileChooser
 import org.apache.logging.log4j.LogManager
+import java.io.File
 
 
 class MasterView: View() {
     companion object {
         val LOG = LogManager.getLogger(MasterView::class.java)
     }
+
+    val configuration : ConfigurationController by inject()
+
     override val root = borderpane() {
         top {
             menubar {
                 menu("File") {
                     item("About")
-                    item("Quit", "Shortcut+Q")
+                    item("Quit", "Shortcut+Q").action {
+                        Platform.runLater(closeEvent())
+                    }
                 }
             }
         }
         center<TopView>()
         bottom<BottomView>()
 
-        setPrefSize(800.0, 600.0)
+        setPrefSize(configuration.appWidth, configuration.appHeight)
+
+        widthProperty().addListener {observable: ObservableValue<out Number>, oldValue: Number, newValue: Number ->
+            configuration.appWidth = newValue.toDouble()
+        }
+        heightProperty().addListener {observable: ObservableValue<out Number>, oldValue: Number, newValue: Number ->
+            configuration.appHeight = newValue.toDouble()
+        }
+
+        primaryStage.setOnCloseRequest {
+            Platform.runLater(closeEvent())
+        }
+    }
+
+    private fun closeEvent(): () -> Unit {
+        return {
+            LOG.info("exit")
+            configuration.close()
+            Platform.exit()
+            System.exit(0)
+        }
     }
 }
 
@@ -40,10 +68,13 @@ class TopView: View() {
     }
 
     val controller: MainController by inject()
+    val configuration : ConfigurationController by inject()
+
     var methodName = controller.currentMethod.methodProperty.objectBinding { it }
 
     val urlDisabledProperty = SimpleBooleanProperty(true)
     var responsePane: Tab by singleAssign<Tab>()
+    var scrollPane : ScrollPane by singleAssign<ScrollPane>()
 
     init {
         controller.responseBodyProperty.onChange { responsePane.select() }
@@ -67,11 +98,11 @@ class TopView: View() {
                                 if (controller.validateUrl(this.text)) {
                                     LOG.info("correct url stored from ${previousValue} to ${this.text}")
                                     previousValue = this.text
+                                    configuration.urlValue = this.text
                                     removeClass(PostmanStyle.errorClass)
                                     urlDisabledProperty.value = false
                                 } else {
-                                    LOG.info("incorrect url resolved ${this.text}, previous $previousValue restored")
-//                                    this.text = previousValue
+                                    LOG.info("incorrect url resolved ${this.text}, previous $previousValue might be restored")
                                     addClass(PostmanStyle.errorClass)
                                     urlDisabledProperty.value = true
 
@@ -95,12 +126,16 @@ class TopView: View() {
                 button("attach a file") {
                     setOnAction {
                         val fileChooser = FileChooser()
+                        if (configuration.fileDirectory.isNotEmpty()) {
+                            fileChooser.initialDirectory = File(configuration.fileDirectory)
+                        }
                         val file = fileChooser.showOpenDialog(null)
                         controller.readBodyFromFile(file)
                     }
                 }
             }
             bottom {
+                maxHeight = 400.0
                 tabpane {
                     tabClosingPolicy = TabPane.TabClosingPolicy.UNAVAILABLE
 
@@ -110,14 +145,15 @@ class TopView: View() {
                         }
                     }
                     responsePane = tab("response body") {
-                        anchorpane() {
-                            addClass("markerClass")
-                            scrollpane {
-                                label(controller.responseBodyProperty) {
-                                    isWrapText = true
-                                }
+                        addClass("markerClass")
+                        scrollPane = scrollpane {
+                            vbarPolicy = ScrollPane.ScrollBarPolicy.AS_NEEDED
+                            hbarPolicy = ScrollPane.ScrollBarPolicy.AS_NEEDED
 
-                                isFitToWidth = true
+                            label(controller.responseBodyProperty) {
+                                heightProperty().addListener {observable: ObservableValue<out Number>, oldValue: Number, newValue: Number ->
+                                    scrollPane.vvalue = newValue.toDouble()
+                                }
                             }
                         }
                     }

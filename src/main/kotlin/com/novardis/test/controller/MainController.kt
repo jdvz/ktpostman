@@ -28,6 +28,8 @@ class MainController: Controller() {
         val URL_INITIAL_VALUE = "http://"
     }
 
+    val configuration : ConfigurationController by inject()
+
     val sendService = Injector.inject(SendService::class.java)
 
     val methods = FXCollections.observableArrayList<String>(sendService.methods().map { m -> m.name })
@@ -41,7 +43,7 @@ class MainController: Controller() {
             return field
         }
 
-    val urlProperty = SimpleStringProperty(URL_INITIAL_VALUE)
+    val urlProperty = SimpleStringProperty(getInitialUrlValue())
     var url by urlProperty
 
     val bodyProperty = SimpleStringProperty()
@@ -84,11 +86,14 @@ class MainController: Controller() {
         }
     }
 
-    fun readBodyFromFile(file: File) {
-        body = file.readText()
+    fun readBodyFromFile(file: File?) {
+        if (file != null && file.isFile()) {
+            configuration.fileDirectory = file.parentFile.absolutePath
+            body = file.readText()
+        }
     }
 
-    fun getInitialUrlValue() : String = URL_INITIAL_VALUE
+    fun getInitialUrlValue() : String = configuration.urlValue ?: URL_INITIAL_VALUE
 }
 
 class CurrentMethod(name: Method) {
