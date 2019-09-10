@@ -35,9 +35,9 @@ class MainController: Controller() {
     val sendService = Injector.inject(SendService::class.java)
 
     val methods = FXCollections.observableArrayList<String>(sendService.methods().map { m -> m.name })
-    var parameters = mutableListOf(Couple())
-    var headers = mutableListOf(Couple())
-    var cookies = mutableListOf(Couple())
+    var parameters = FXCollections.observableArrayList(mutableListOf(Couple()))
+    var headers = FXCollections.observableArrayList(mutableListOf(Couple()))
+    var cookies = FXCollections.observableArrayList(mutableListOf(Couple()))
 
     val currentMethod : CurrentMethod = CurrentMethod(Method.GET)
         get() {

@@ -12,6 +12,10 @@ import tornadofx.*
 import javafx.beans.value.ObservableValue
 import javafx.scene.control.ScrollPane
 import javafx.scene.control.Tab
+import javafx.scene.layout.AnchorPane
+import javafx.scene.layout.Priority
+import javafx.scene.layout.VBox
+import javafx.scene.text.FontWeight
 import javafx.stage.FileChooser
 import org.apache.logging.log4j.LogManager
 import java.io.File
@@ -20,6 +24,10 @@ import java.io.File
 class MasterView: View() {
     companion object {
         val LOG = LogManager.getLogger(MasterView::class.java)
+    }
+
+    init {
+        importStylesheet(PostmanStyle::class)
     }
 
     val configuration : ConfigurationController by inject()
@@ -39,6 +47,7 @@ class MasterView: View() {
         bottom<BottomView>()
 
         setPrefSize(configuration.appWidth, configuration.appHeight)
+        setMaxSize(1000.0, 800.0)
 
         widthProperty().addListener {observable: ObservableValue<out Number>, oldValue: Number, newValue: Number ->
             configuration.appWidth = newValue.toDouble()
@@ -72,7 +81,7 @@ class TopView: View() {
 
     var methodName = controller.currentMethod.methodProperty.objectBinding { it }
 
-    val urlDisabledProperty = SimpleBooleanProperty(true)
+    val urlDisabledProperty = SimpleBooleanProperty(controller.validateUrl(controller.getInitialUrlValue()))
     var responsePane: Tab by singleAssign<Tab>()
     var scrollPane : ScrollPane by singleAssign<ScrollPane>()
 
@@ -80,13 +89,14 @@ class TopView: View() {
         controller.responseBodyProperty.onChange { responsePane.select() }
     }
 
-    override val root = vbox(10) {
-        padding = insets(10)
+    override val root = vbox{
+//        addClass("layoutClass")
 
         borderpane {
             top {
-
+                id = "top-pane-wrapper"
                 hbox {
+                    id = "top-pane"
                     label("Url: ")
                     textfield(controller.urlProperty) {
                         var previousValue = controller.getInitialUrlValue()
@@ -112,6 +122,11 @@ class TopView: View() {
                         textFormatter = TextFormatter<TextFormatter.Change>(controller.httpValidator)
 
                     }
+                    hbox {
+                        label("Choose method")
+                        combobox(controller.currentMethod.methodProperty, controller.methods)
+                    }
+
                     button() {
                         disableProperty().bind(urlDisabledProperty)
                         textProperty().bind(methodName)
@@ -122,37 +137,52 @@ class TopView: View() {
                     useMaxWidth = true
                 }
             }
-            center {
-                button("attach a file") {
-                    setOnAction {
-                        val fileChooser = FileChooser()
-                        if (configuration.fileDirectory.isNotEmpty()) {
-                            fileChooser.initialDirectory = File(configuration.fileDirectory)
-                        }
-                        val file = fileChooser.showOpenDialog(null)
-                        controller.readBodyFromFile(file)
-                    }
-                }
-            }
             bottom {
+                id = "bottom-pane-wrapper"
                 tabpane {
+                    id = "bottom-pane"
+                    val heightProperty = heightProperty()
+                    val initialHeight = height
                     tabClosingPolicy = TabPane.TabClosingPolicy.UNAVAILABLE
 
                     tab("request body") {
-                        textarea(controller.bodyProperty) {
-
-                        }
-                    }
-                    responsePane = tab("response body") {
-                        addClass("markerClass")
-                        scrollPane = scrollpane {
-                            label(controller.responseBodyProperty) {
-                                heightProperty().addListener {observable: ObservableValue<out Number>, oldValue: Number, newValue: Number ->
-                                    scrollPane.vvalue = newValue.toDouble()
+                        vbox {
+                            button("attach a file") {
+                                setOnAction {
+                                    val fileChooser = FileChooser()
+                                    if (configuration.fileDirectory.isNotEmpty()) {
+                                        fileChooser.initialDirectory = File(configuration.fileDirectory)
+                                    }
+                                    val file = fileChooser.showOpenDialog(null)
+                                    controller.readBodyFromFile(file)
                                 }
+                            }
+                            textarea(controller.bodyProperty) {
+                                maxHeightProperty().bind(heightProperty)
                             }
                         }
                     }
+                    responsePane = tab("response body") {
+                        vbox {
+                            addClass("markerClass")
+                            scrollPane = scrollpane {
+//                                vbarPolicy = ScrollPane.ScrollBarPolicy.ALWAYS
+                                label(controller.responseBodyProperty) {
+                                    heightProperty().addListener {observable: ObservableValue<out Number>, oldValue: Number, newValue: Number ->
+                                        scrollPane.vvalue = newValue.toDouble()
+                                    }
+                                }
+                                maxHeightProperty().bind(heightProperty)
+                                maxWidth = Double.MAX_VALUE
+                            }
+                            VBox.setVgrow(scrollPane, Priority.ALWAYS)
+                        }
+                    }
+/*
+                    heightProperty().addListener { observable : ObservableValue<out Number>, oldValue, newValue ->
+                        scrollPane.maxHeight = newValue.toDouble()
+                    }
+*/
                 }
             }
         }
@@ -167,11 +197,6 @@ class BottomView: View() {
     private val cookies = controller.cookies.observable()
 
     override val root = vbox {
-        hbox {
-            label("Choose method")
-            combobox(controller.currentMethod.methodProperty, controller.methods)
-        }
-
         tabpane {
             tabClosingPolicy = TabPane.TabClosingPolicy.UNAVAILABLE
 
@@ -255,7 +280,7 @@ class BottomView: View() {
                             column("value", Couple::valueProperty).makeEditable().remainingWidth()
                             readonlyColumn("", Couple::name).cellFormat {
                                 graphic = hbox(spacing = 5) {
-                                    button("-").action { controller.remove(it, parameters) }
+                                    button("-").action { controller.remove(it, cookies) }
                                 }
                             }
 
