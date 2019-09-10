@@ -12,10 +12,8 @@ import tornadofx.*
 import javafx.beans.value.ObservableValue
 import javafx.scene.control.ScrollPane
 import javafx.scene.control.Tab
-import javafx.scene.layout.AnchorPane
 import javafx.scene.layout.Priority
 import javafx.scene.layout.VBox
-import javafx.scene.text.FontWeight
 import javafx.stage.FileChooser
 import org.apache.logging.log4j.LogManager
 import java.io.File
@@ -86,7 +84,7 @@ class TopView: View() {
     var scrollPane : ScrollPane by singleAssign<ScrollPane>()
 
     init {
-        controller.responseBodyProperty.onChange { responsePane.select() }
+        controller.requestModel.responseBodyProperty.onChange { responsePane.select() }
     }
 
     override val root = vbox{
@@ -98,7 +96,7 @@ class TopView: View() {
                 hbox {
                     id = "top-pane"
                     label("Url: ")
-                    textfield(controller.urlProperty) {
+                    textfield(controller.requestModel.urlProperty) {
                         var previousValue = controller.getInitialUrlValue()
                         useMaxWidth = true
                         minWidth = 400.0
@@ -137,12 +135,12 @@ class TopView: View() {
                     useMaxWidth = true
                 }
             }
+
             bottom {
                 id = "bottom-pane-wrapper"
                 tabpane {
                     id = "bottom-pane"
                     val heightProperty = heightProperty()
-                    val initialHeight = height
                     tabClosingPolicy = TabPane.TabClosingPolicy.UNAVAILABLE
 
                     tab("request body") {
@@ -157,7 +155,7 @@ class TopView: View() {
                                     controller.readBodyFromFile(file)
                                 }
                             }
-                            textarea(controller.bodyProperty) {
+                            textarea(controller.requestModel.bodyProperty) {
                                 maxHeightProperty().bind(heightProperty)
                             }
                         }
@@ -166,8 +164,7 @@ class TopView: View() {
                         vbox {
                             addClass("markerClass")
                             scrollPane = scrollpane {
-//                                vbarPolicy = ScrollPane.ScrollBarPolicy.ALWAYS
-                                label(controller.responseBodyProperty) {
+                                label(controller.requestModel.responseBodyProperty) {
                                     heightProperty().addListener {observable: ObservableValue<out Number>, oldValue: Number, newValue: Number ->
                                         scrollPane.vvalue = newValue.toDouble()
                                     }
@@ -178,11 +175,6 @@ class TopView: View() {
                             VBox.setVgrow(scrollPane, Priority.ALWAYS)
                         }
                     }
-/*
-                    heightProperty().addListener { observable : ObservableValue<out Number>, oldValue, newValue ->
-                        scrollPane.maxHeight = newValue.toDouble()
-                    }
-*/
                 }
             }
         }
@@ -192,9 +184,9 @@ class TopView: View() {
 class BottomView: View() {
     val controller: MainController by inject()
 
-    private val parameters = controller.parameters.observable()
-    private val headers = controller.headers.observable()
-    private val cookies = controller.cookies.observable()
+    private val parameters = controller.requestModel.parameters
+    private val headers = controller.requestModel.headers
+    private val cookies = controller.requestModel.cookies
 
     override val root = vbox {
         tabpane {
@@ -206,10 +198,10 @@ class BottomView: View() {
                         hbox {
                             label("Configure parameters")
                             button("+").action {
-                                controller.parameters.add(Couple())
+                                controller.requestModel.parameters.add(Couple())
                             }
                             button("-").action {
-                                controller.parameters.clear()
+                                controller.requestModel.parameters.clear()
                             }
                         }
                     }
@@ -236,10 +228,10 @@ class BottomView: View() {
                         hbox {
                             label("headers")
                             button("+").action {
-                                controller.headers.add(Couple())
+                                controller.requestModel.headers.add(Couple())
                             }
                             button("-").action {
-                                controller.headers.clear()
+                                controller.requestModel.headers.clear()
                             }
                         }
                     }
@@ -266,10 +258,10 @@ class BottomView: View() {
                         hbox {
                             label("cookies")
                             button("+").action {
-                                controller.cookies.add(Couple())
+                                controller.requestModel.cookies.add(Couple())
                             }
                             button("-").action {
-                                controller.cookies.clear()
+                                controller.requestModel.cookies.clear()
                             }
                         }
                     }

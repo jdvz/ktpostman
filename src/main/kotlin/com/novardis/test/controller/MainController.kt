@@ -17,6 +17,7 @@ import tornadofx.Controller
 import tornadofx.getValue
 import tornadofx.setValue
 import java.io.File
+import java.io.Serializable
 import java.util.*
 import java.util.function.UnaryOperator
 
@@ -35,9 +36,6 @@ class MainController: Controller() {
     val sendService = Injector.inject(SendService::class.java)
 
     val methods = FXCollections.observableArrayList<String>(sendService.methods().map { m -> m.name })
-    var parameters = FXCollections.observableArrayList(mutableListOf(Couple()))
-    var headers = FXCollections.observableArrayList(mutableListOf(Couple()))
-    var cookies = FXCollections.observableArrayList(mutableListOf(Couple()))
 
     val currentMethod : CurrentMethod = CurrentMethod(Method.GET)
         get() {
@@ -45,14 +43,7 @@ class MainController: Controller() {
             return field
         }
 
-    val urlProperty = SimpleStringProperty(getInitialUrlValue())
-    var url by urlProperty
-
-    val bodyProperty = SimpleStringProperty()
-    var body by bodyProperty
-
-    val responseBodyProperty = SimpleStringProperty()
-    var responseBody by responseBodyProperty
+    val requestModel : RequestModel = RequestModel(getInitialUrlValue())
 
     val httpValidator : UnaryOperator<TextFormatter.Change?>
             = UnaryOperator { t -> if (t?.controlNewText?.matches(URL_SYMBOLS_REGEX) == true) t else null }
@@ -62,28 +53,28 @@ class MainController: Controller() {
     }
 
     fun send() {
-        LOG.info("Send request to ${url ?: "void"}")
-        if (url == null) {
+        LOG.info("Send request to ${requestModel.url ?: "void"}")
+        if (requestModel.url == null) {
             LOG.error("URL not set")
         } else {
-            parameters.removeAll(Couple::isEmpty)
-            headers.removeAll(Couple::isEmpty)
-            cookies.removeAll(Couple::isEmpty)
+            requestModel.parameters.removeAll(Couple::isEmpty)
+            requestModel.headers.removeAll(Couple::isEmpty)
+            requestModel.cookies.removeAll(Couple::isEmpty)
 
 
             val response = currentMethod.getMethod().send(
-                url!!,
-                body,
-                parameters,
-                headers,
-                cookies
+                requestModel.url!!,
+                requestModel.body,
+                requestModel.parameters,
+                requestModel.headers,
+                requestModel.cookies
             )
 
             if (response != null) {
-                cookies.addAll(response.allHeaders.filter { it.name.equals(SET_COOKIE_HEADER, true) }
+                requestModel.cookies.addAll(response.allHeaders.filter { it.name.equals(SET_COOKIE_HEADER, true) }
                     .map { Couple.fromArray(it.value.split("=")) })
-                headers.addAll(response.allHeaders.filter { !it.name.equals(SET_COOKIE_HEADER, true) }.map { Couple(it.name, it.value) })
-                responseBody = Converter.transformResponse(Injector.inject(StringResponseTransformer::class.java), response)
+                requestModel.headers.addAll(response.allHeaders.filter { !it.name.equals(SET_COOKIE_HEADER, true) }.map { Couple(it.name, it.value) })
+                requestModel.responseBody = Converter.transformResponse(Injector.inject(StringResponseTransformer::class.java), response)
             }
         }
     }
@@ -99,18 +90,33 @@ class MainController: Controller() {
     fun readBodyFromFile(file: File?) {
         if (file != null && file.isFile()) {
             configuration.fileDirectory = file.parentFile.absolutePath
-            body = file.readText()
+            requestModel.body = file.readText()
         }
     }
 
     fun getInitialUrlValue() : String = configuration.urlValue ?: URL_INITIAL_VALUE
 }
 
-class CurrentMethod(name: Method) {
+class CurrentMethod(name: Method) : Serializable {
     val methodProperty = SimpleStringProperty(this, "methodName", name.name)
     var methodName by methodProperty
 
     fun getMethod(): Method {
         return Method.valueOf(methodName)
     }
+}
+
+class RequestModel(initialValue: String) : Serializable {
+    val urlProperty = SimpleStringProperty(initialValue)
+    var url by urlProperty
+
+    val bodyProperty = SimpleStringProperty()
+    var body by bodyProperty
+
+    val responseBodyProperty = SimpleStringProperty()
+    var responseBody by responseBodyProperty
+
+    var parameters = FXCollections.observableArrayList(mutableListOf(Couple()))
+    var headers = FXCollections.observableArrayList(mutableListOf(Couple()))
+    var cookies = FXCollections.observableArrayList(mutableListOf(Couple()))
 }
