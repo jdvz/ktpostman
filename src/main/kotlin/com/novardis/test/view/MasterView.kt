@@ -47,10 +47,10 @@ class MasterView: View() {
         setPrefSize(configuration.appWidth, configuration.appHeight)
         setMaxSize(1000.0, 800.0)
 
-        widthProperty().addListener {observable: ObservableValue<out Number>, oldValue: Number, newValue: Number ->
+        widthProperty().addListener {_: ObservableValue<out Number>, _: Number, newValue: Number ->
             configuration.appWidth = newValue.toDouble()
         }
-        heightProperty().addListener {observable: ObservableValue<out Number>, oldValue: Number, newValue: Number ->
+        heightProperty().addListener {_: ObservableValue<out Number>, _: Number, newValue: Number ->
             configuration.appHeight = newValue.toDouble()
         }
 
@@ -101,7 +101,7 @@ class TopView: View() {
                         useMaxWidth = true
                         minWidth = 400.0
 
-                        focusedProperty().addListener { observable: ObservableValue<out Boolean>, oldValue: Boolean, newValue: Boolean ->
+                        focusedProperty().addListener { _: ObservableValue<out Boolean>, _: Boolean, newValue: Boolean ->
                             if (!newValue) {
                                 if (controller.validateUrl(this.text)) {
                                     LOG.info("correct url stored from ${previousValue} to ${this.text}")
@@ -165,7 +165,7 @@ class TopView: View() {
                             addClass("markerClass")
                             scrollPane = scrollpane {
                                 label(controller.requestModel.responseBodyProperty) {
-                                    heightProperty().addListener {observable: ObservableValue<out Number>, oldValue: Number, newValue: Number ->
+                                    heightProperty().addListener {_: ObservableValue<out Number>, _: Number, newValue: Number ->
                                         scrollPane.vvalue = newValue.toDouble()
                                     }
                                 }
@@ -216,7 +216,8 @@ class BottomView: View() {
                                 }
                             }
 
-                            columnResizePolicy = SmartResize.POLICY
+                            // doesn't work in 11
+//                            setColumnResizePolicy(SmartResize.POLICY)
                         }
                     }
                 }
@@ -246,7 +247,7 @@ class BottomView: View() {
                                 }
                             }
 
-                            columnResizePolicy = SmartResize.POLICY
+//                            setColumnResizePolicy(SmartResize.POLICY)
                         }
                     }
                 }
@@ -276,7 +277,7 @@ class BottomView: View() {
                                 }
                             }
 
-                            columnResizePolicy = SmartResize.POLICY
+//                            setColumnResizePolicy(SmartResize.POLICY)
                         }
                     }
                 }
