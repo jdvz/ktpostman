@@ -14,7 +14,7 @@ class Injector {
     fun <T:Bean> inject(clazz: Class<T>): T {
         var bean: Bean? = retrieveBean(clazz as Class<Bean>)
         if (bean == null) {
-            bean = clazz.newInstance()
+            bean = clazz.getDeclaredConstructor().newInstance()
             beans.put(clazz, bean)
         }
         return bean as T

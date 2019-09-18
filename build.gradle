@@ -1,19 +1,7 @@
-/*
-buildscript {
-    repositories {
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-    }
-    dependencies {
-        classpath 'org.openjfx:javafx-plugin:0.0.8'
-    }
-}
-*/
-
 plugins {
     id 'org.jetbrains.kotlin.jvm' version '1.3.50'
     id 'org.openjfx.javafxplugin' version '0.0.8'
+    id 'application'
 }
 
 group 'com.novardis.test'
@@ -21,7 +9,7 @@ version '0.1-SNAPSHOT'
 
 sourceCompatibility = 1.11
 
-apply plugin: 'org.openjfx.javafxplugin'
+//apply plugin: 'org.openjfx.javafxplugin'
 
 repositories {
     mavenCentral()
@@ -29,8 +17,7 @@ repositories {
 }
 
 def currentOS = org.gradle.internal.os.OperatingSystem.current()
-def platform = 'linux'
-/*
+def platform
 if (currentOS.isWindows()) {
     platform = 'win'
 } else if (currentOS.isLinux()) {
@@ -38,12 +25,11 @@ if (currentOS.isWindows()) {
 } else if (currentOS.isMacOsX()) {
     platform = 'mac'
 }
-*/
 
 javafx {
     version = '11'
+    sdk = '/usr/share/openjfx/'
     modules = ['javafx.controls', 'javafx.fxml']
-//    configuration = 'compileOnly'
 }
 
 sourceSets {
@@ -52,6 +38,9 @@ sourceSets {
     }
     test {
         kotlin.srcDirs = ['src/test/kotlin']
+    }
+    resources {
+        kotlin.srcDirs = ['src/resources']
     }
 }
 
@@ -64,23 +53,55 @@ dependencies {
     implementation "org.openjfx:javafx-controls:11:${platform}"
     implementation "org.openjfx:javafx-fxml:11:${platform}"
 
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.10.0.pr1'
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.0.pr1'
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.10.0.pr1'
-    compile group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.10.0.pr2'
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.10.0.pr1'
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.0.pr1'
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.10.0.pr1'
+    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.10.0.pr2'
 
-    compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.9'
-    compile group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.4.12'
+    implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.9'
+    implementation group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.4.12'
 
-    compile group: 'commons-codec', name: 'commons-codec', version: '1.13'
+    implementation group: 'commons-codec', name: 'commons-codec', version: '1.13'
 
-    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.12.1'
-    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.12.1'
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.12.1'
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.12.1'
 }
+
+mainClassName = "com.novardis.test.KtAppKt"
 
 compileKotlin {
     kotlinOptions.jvmTarget = "1.8"
 }
 compileTestKotlin {
     kotlinOptions.jvmTarget = "1.8"
+}
+
+jar {
+    manifest {
+        attributes(
+            'Class-Path':configurations.compile.collect{ it.name }.join(' '),
+            'Main-Class': 'com.novardis.test.KtAppKt'
+        )
+    }
+}
+
+compileJava {
+    doFirst {
+        jvmArgs = [
+                '--module-path', classpath.asPath,
+                '--add-modules', 'javafx.controls,javafx.fxml'
+        ]
+        def classpath = files()
+    }
+}
+
+run {
+    dependsOn('compileJava')
+    doFirst {
+        jvmArgs = [
+                '--module-path', classpath.asPath,
+                '--add-modules', 'javafx.controls,javafx.fxml'
+        ]
+        def classpath = files()
+    }
 }
